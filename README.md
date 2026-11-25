@@ -10,7 +10,7 @@ Ustawienia), działa baza SQLite z modelami Oferta i CV oraz ustawienia ze zmien
 
 ## Uruchomienie
 
-Potrzebny jest [uv](https://docs.astral.sh/uv/) i Python 3.12 lub nowszy.
+Potrzebny jest [uv](https://docs.astral.sh/uv/). Plik `.python-version` wybiera Pythona 3.13; jeśli go nie masz, uv pobierze go sam. Python musi mieć moduł `sqlite3` (wersje od uv go mają; Python kompilowany ręcznie bez `libsqlite3-dev` nie).
 
 ```bash
 uv sync
