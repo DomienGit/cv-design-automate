@@ -1,0 +1,36 @@
+# Sekrety: NIGDY nie commitować (repozytorium jest publiczne)
+credentials.json
+token.json
+client_secret*.json
+*.credentials.json
+.env
+.env.*
+!.env.example
+
+# Dane lokalne aplikacji (baza, cache stron, wygenerowane CV)
+data/
+*.db
+*.sqlite
+*.sqlite3
+output/
+
+# Dane osobowe z profilu i przykładowe maile
+profil/
+*.eml
+
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Edytory i system
+.idea/
+.vscode/
+.DS_Store

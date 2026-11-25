@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel CV</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <h1>Panel CV</h1>
+    <span class="version">v{{ version }}</span>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="offers">Oferty</button>
+    <button role="tab" aria-selected="false" data-tab="cvs">Gotowe CV</button>
+    <button role="tab" aria-selected="false" data-tab="settings">Ustawienia</button>
+  </nav>
+
+  <main>
+    <section id="tab-offers" class="panel" role="tabpanel">
+      <div class="toolbar">
+        <button class="primary" disabled title="Dostępne w kolejnym etapie">Pobierz oferty</button>
+      </div>
+      <p class="empty">Brak ofert. Pobieranie z Gmaila pojawi się w kolejnym etapie.</p>
+    </section>
+
+    <section id="tab-cvs" class="panel" role="tabpanel" hidden>
+      <p class="empty">Nie ma jeszcze wygenerowanych CV.</p>
+    </section>
+
+    <section id="tab-settings" class="panel" role="tabpanel" hidden>
+      <dl class="settings">
+        <dt>Folder profilu</dt>
+        <dd>{{ settings.notes_dir }}
+          {% if settings.profile_files_present %}<span class="ok">pliki znalezione</span>
+          {% else %}<span class="warn">brak plików profilu</span>{% endif %}</dd>
+        <dt>Folder na CV</dt><dd>{{ settings.cv_output_dir }}</dd>
+        <dt>Nadawcy ofert</dt><dd>{{ settings.senders | join(", ") }}</dd>
+        <dt>Baza danych</dt><dd>{{ settings.database_path }}</dd>
+        <dt>Gmail: credentials.json</dt>
+        <dd>{{ settings.gmail_credentials_path }}
+          {% if settings.gmail_credentials_present %}<span class="ok">znaleziony</span>
+          {% else %}<span class="warn">nie znaleziono</span>{% endif %}</dd>
+        <dt>Gmail: token</dt>
+        <dd>{% if settings.gmail_token_present %}<span class="ok">zalogowano</span>
+          {% else %}<span class="muted">jeszcze nie zalogowano</span>{% endif %}</dd>
+      </dl>
+      <p class="muted">Ustawienia zmieniasz w pliku <code>.env</code> (wzór w <code>.env.example</code>).</p>
+    </section>
+  </main>
+
+  <script>
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach((b) =>
+          b.setAttribute("aria-selected", String(b === btn)));
+        document.querySelectorAll(".panel").forEach((p) => {
+          p.hidden = p.id !== "tab-" + btn.dataset.tab;
+        });
+      });
+    });
+  </script>
+</body>
+</html>
