@@ -33,3 +33,15 @@ def settings(tmp_path) -> Settings:
 def client(settings: Settings):
     with TestClient(create_app(settings)) as c:
         yield c
+
+
+@pytest.fixture(autouse=True)
+def _no_real_claude():
+    """Testy nigdy nie wołają prawdziwego `claude`; potrzebna atrapa → FakeClaude."""
+    from cv_app.claude_client import use_runner
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("Test próbował wywołać prawdziwego claude; użyj FakeClaude")
+
+    with use_runner(forbidden):
+        yield

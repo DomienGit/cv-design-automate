@@ -57,6 +57,18 @@ class Settings(BaseSettings):
     profile_about_file: str = "O mnie.md"
     profile_projects_file: str = "Projekty.md"
 
+    # Zdjęcie do CV; domyślnie zdjecie.jpg/.png (albo photo.*) w folderze profilu.
+    photo_path: Path | None = None
+
+    # Chromium dla Playwrighta; domyślnie przeglądarka z `playwright install chromium`.
+    chromium_executable: Path | None = None
+
+    # Claude Code w trybie nieinteraktywnym (`claude -p`) na koncie claude.ai.
+    claude_command: str = "claude"
+    claude_model: str | None = None  # np. "sonnet"; domyślnie model z konta
+    claude_timeout: int = Field(default=300, ge=10)  # sekundy na jedno wywołanie
+    claude_retries: int = Field(default=2, ge=0, le=5)  # ponowienia po błędzie
+
     # Folder, do którego zapisujemy gotowe CV, i wzór nazwy pliku.
     cv_output_dir: Path = Field(default_factory=lambda: Path.home() / "CV")
     cv_filename_pattern: str = "CV_Dominik_{company}_{position}_{date}.pdf"
@@ -92,7 +104,13 @@ class Settings(BaseSettings):
         return [s.strip().lower() for s in value if s.strip()]
 
     @field_validator(
-        "data_dir", "notes_dir", "cv_output_dir", "gmail_credentials_path", "gmail_token_path"
+        "data_dir",
+        "notes_dir",
+        "cv_output_dir",
+        "gmail_credentials_path",
+        "gmail_token_path",
+        "photo_path",
+        "chromium_executable",
     )
     @classmethod
     def _expand_user(cls, value: Path | None) -> Path | None:

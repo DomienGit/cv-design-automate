@@ -36,6 +36,8 @@ list motywacyjny.
 uv sync                      # instalacja zależności
 uv run cv-app                # start panelu (otwiera przeglądarkę)
 uv run cv-app --no-browser   # bez otwierania przeglądarki
+uv run cv-app --gmail-check  # logowanie do Gmaila i podgląd ofert (bez panelu)
+uv run playwright install chromium   # raz: przeglądarka do PDF
 uv run pytest                # testy
 uv run ruff check . && uv run ruff format .
 ```
