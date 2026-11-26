@@ -1,0 +1,201 @@
+/* Szablon CV: jedna strona A4, ciemny lewy pasek, jasna prawa kolumna. */
+@page { size: A4; margin: 0; }
+
+:root {
+  --side-bg: #14203a;
+  --side-pill: #22314f;
+  --side-text: #d6deee;
+  --side-muted: #9fb0cf;
+  --accent: #3466d6;
+  --accent-soft: #e7edfb;
+  --accent-text: #2a4fae;
+  --ink: #18213a;
+  --body: #3a4256;
+  --muted: #7c8396;
+  --rule: #dfe3ec;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 210mm;
+  height: 297mm;
+  font-family: "Inter", "Segoe UI", "DejaVu Sans", Arial, sans-serif;
+  font-size: 9pt;
+  line-height: 1.45;
+  color: var(--body);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+ul { list-style: none; }
+a { color: inherit; text-decoration: none; }
+
+.page {
+  display: grid;
+  grid-template-columns: 66mm 1fr;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+}
+
+/* --- lewy pasek --------------------------------------------------------------- */
+.side {
+  background: var(--side-bg);
+  color: var(--side-text);
+  padding: 11mm 7mm 9mm 8mm;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo {
+  width: 38mm;
+  height: 38mm;
+  margin: 0 auto 9mm;
+  border-radius: 50%;
+  border: 1.2mm solid #6f9cf0;
+  overflow: hidden;
+  background: var(--side-pill);
+}
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.side h2 {
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #8fb3ff;
+  margin-bottom: 3mm;
+}
+
+.side-section { margin-bottom: 7mm; }
+.side-section.languages { margin-top: auto; margin-bottom: 0; }
+
+.contact li {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  font-size: 7.8pt;
+  margin-bottom: 1.6mm;
+  overflow-wrap: anywhere;
+}
+.icon {
+  width: 3.4mm;
+  height: 3.4mm;
+  flex: none;
+  fill: none;
+  stroke: #8fb3ff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.skill-group { margin-bottom: 3mm; }
+.skill-group h3 {
+  font-size: 8.2pt;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 1.4mm;
+}
+.pills { display: flex; flex-wrap: wrap; gap: 1.2mm; }
+.pills li {
+  background: var(--side-pill);
+  color: var(--side-text);
+  border-radius: 1.2mm;
+  padding: 0.5mm 1.8mm;
+  font-size: 7.2pt;
+}
+
+.languages table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+.languages th { text-align: left; font-weight: 600; color: #fff; padding: 0.6mm 0; }
+.languages td { text-align: right; color: var(--side-text); }
+
+/* --- prawa kolumna ------------------------------------------------------------ */
+.main {
+  padding: 13mm 11mm 8mm 10mm;
+  display: flex;
+  flex-direction: column;
+}
+
+.head h1 {
+  font-family: "Inter Display", "Inter", sans-serif;
+  font-size: 27pt;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.head .title {
+  margin-top: 2mm;
+  font-size: 9pt;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.head::after {
+  content: "";
+  display: block;
+  width: 14mm;
+  height: 0.8mm;
+  margin-top: 3mm;
+  background: var(--accent);
+  border-radius: 1mm;
+}
+
+.block { margin-top: 8mm; }
+.block h2 {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  font-size: 9pt;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 3mm;
+}
+.block h2::after { content: ""; flex: 1; height: 0.3mm; background: var(--rule); }
+
+.summary p { text-align: left; }
+
+.project { margin-bottom: 4mm; break-inside: avoid; }
+.project-head { display: flex; align-items: baseline; justify-content: space-between; gap: 3mm; }
+.project h3, .education h3 { font-size: 10.5pt; font-weight: 600; color: var(--ink); }
+.project-link { font-size: 7.8pt; font-weight: 500; color: var(--accent); white-space: nowrap; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 1.2mm; margin: 1.2mm 0 1.6mm; }
+.tags li {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-radius: 1.2mm;
+  padding: 0.3mm 1.8mm;
+  font-size: 7pt;
+  font-weight: 600;
+}
+
+.points li {
+  position: relative;
+  padding-left: 4mm;
+  margin-bottom: 0.6mm;
+}
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 1.2mm;
+  top: 0.62em;
+  width: 1.1mm;
+  height: 1.1mm;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.edu-sub { color: var(--accent); font-weight: 500; margin: 0.6mm 0 1mm; }
+
+.clause {
+  margin-top: auto;
+  padding-top: 4mm;
+  font-size: 6.2pt;
+  line-height: 1.35;
+  color: var(--muted);
+}
