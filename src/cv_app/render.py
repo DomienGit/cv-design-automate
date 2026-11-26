@@ -171,18 +171,22 @@ def render_html(blocks: CVBlocks, ctx: RenderContext) -> str:
     )
 
 
+def chromium_launch_args(settings: Settings) -> dict[str, object]:
+    """Argumenty ``chromium.launch``: własna przeglądarka z ustawień, jeśli podana."""
+    if settings.chromium_executable is not None:
+        return {"executable_path": str(settings.chromium_executable)}
+    return {}
+
+
 def render_pdf(html: str, out_path: Path, settings: Settings) -> Path:
     """Zapisuje PDF A4. Wymaga Chromium dla Playwrighta (``playwright install chromium``)."""
     from playwright.sync_api import Error as PlaywrightError
     from playwright.sync_api import sync_playwright
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    launch_args: dict[str, object] = {}
-    if settings.chromium_executable is not None:
-        launch_args["executable_path"] = str(settings.chromium_executable)
     try:
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(**launch_args)
+            browser = pw.chromium.launch(**chromium_launch_args(settings))
             try:
                 page = browser.new_page()
                 page.set_content(html, wait_until="load")
