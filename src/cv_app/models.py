@@ -76,3 +76,10 @@ class CV(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=_now)
 
     offer: Optional["Offer"] = Relationship(back_populates="cvs")
+
+
+class SyncState(SQLModel, table=True):
+    """Stan synchronizacji źródła (np. "gmail"): czas ostatniego udanego pobrania."""
+
+    key: str = Field(primary_key=True)
+    last_sync_at: datetime

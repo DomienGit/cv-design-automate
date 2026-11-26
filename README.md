@@ -4,9 +4,9 @@ Lokalna aplikacja do tworzenia CV dopasowanych do ofert pracy z maila. Działa t
 na Twoim komputerze i tylko wtedy, gdy ją uruchomisz: panel otwiera się w przeglądarce
 pod `http://127.0.0.1:8765/`, a po zamknięciu nic nie działa w tle.
 
-Obecny stan: szkielet (fala 1 planu). Panel ma trzy puste zakładki (Oferty, Gotowe CV,
-Ustawienia), działa baza SQLite z modelami Oferta i CV oraz ustawienia ze zmiennych
-środowiskowych i pliku `.env`.
+Obecny stan: fala 2 planu. Gotowe są moduły bez panelu: parser profilu, szablon CV
+z renderem PDF, klient Claude Code (`claude -p`), adapter maili Pracuj.pl i pobieranie
+maili z Gmaila. Panel ma jeszcze puste zakładki (Oferty, Gotowe CV, Ustawienia).
 
 ## Uruchomienie
 
@@ -16,7 +16,17 @@ Potrzebny jest [uv](https://docs.astral.sh/uv/). Plik `.python-version` wybiera 
 uv sync
 uv run cv-app            # otwiera panel w przeglądarce
 uv run cv-app --no-browser --port 9000
+uv run cv-app --gmail-check   # logowanie do Gmaila i lista ofert z ostatnich dni
 ```
+
+Do PDF potrzebny jest Chromium dla Playwrighta (raz, po `uv sync`):
+
+```bash
+uv run playwright install chromium
+```
+
+Do generowania treści CV potrzebny jest [Claude Code](https://claude.com/claude-code)
+zalogowany na Twoje konto claude.ai (komenda `claude` w `PATH`).
 
 ## Ustawienia
 
@@ -44,6 +54,12 @@ mv ~/Pobrane/credentials.json ~/.config/cv-app/credentials.json
 chmod 600 ~/.config/cv-app/credentials.json
 ```
 
+Pierwsze `uv run cv-app --gmail-check` otworzy logowanie Google w przeglądarce
+(zakres tylko do odczytu, `gmail.readonly`). Token trafia do
+`~/.local/share/cv-app/token.json` z prawami 600; kolejne uruchomienia go odświeżają.
+Jeśli Google pokaże ekran „aplikacja nie jest zweryfikowana”, dodaj swój adres jako
+użytkownika testowego w ekranie zgody OAuth projektu w Google Cloud.
+
 Jeśli wolisz inne miejsce, ustaw `CV_APP_GMAIL_CREDENTIALS_PATH` w `.env`. Zakładka
 Ustawienia pokazuje, czy aplikacja widzi plik (bez pokazywania jego treści).
 `.gitignore` wyklucza `credentials.json`, `token.json`, `client_secret*.json` i `.env`
@@ -53,6 +69,8 @@ w każdym folderze projektu.
 
 Pliki profilu (`profil/O mnie.md`, `profil/Projekty.md`) zawierają dane osobowe,
 dlatego folder `profil/` jest w `.gitignore` i zostaje tylko na Twoim dysku.
+Zdjęcie do CV połóż obok jako `profil/zdjecie.jpg` (albo `.png`) lub wskaż je
+zmienną `CV_APP_PHOTO_PATH`.
 
 ## Rozwój
 
