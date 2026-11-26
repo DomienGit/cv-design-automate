@@ -44,14 +44,21 @@ class Offer(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
 
+    technologies: list[str] = Field(
+        default_factory=list, sa_column=Column(JSON, nullable=False, server_default="[]")
+    )
+
     # Pola techniczne.
     company: str | None = None
+    salary: str | None = None
     language: str | None = None  # "pl" / "en"
     url: str | None = None
     mail_message_id: str | None = Field(default=None, index=True)
     mail_date: datetime | None = None
     category: str | None = None  # np. "devops", "helpdesk"
     incomplete: bool = False  # strona oferty się nie pobrała
+    fetched_at: datetime | None = None  # kiedy pobrano i odczytano stronę oferty
+    filter_reason: str | None = None  # dlaczego filtr przyjął albo odrzucił ofertę
     status: OfferStatus = Field(default=OfferStatus.NEW, index=True)
     created_at: datetime = Field(default_factory=_now)
 

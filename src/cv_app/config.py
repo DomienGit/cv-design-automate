@@ -77,6 +77,33 @@ class Settings(BaseSettings):
     senders: list[str] = Field(default_factory=lambda: ["jobalert@wysylka.pracuj.pl"])
     fetch_days_back: int = Field(default=7, ge=1)
 
+    # Filtr trafności: oferty z tymi słowami w tytule są odrzucane (poziom stanowiska).
+    relevance_exclude_keywords: list[str] = Field(
+        default_factory=lambda: [
+            "senior",
+            "sr",
+            "starszy",
+            "lead",
+            "leader",
+            "principal",
+            "staff",
+            "head of",
+            "architect",
+            "architekt",
+            "manager",
+            "kierownik",
+            "dyrektor",
+            "director",
+            "ekspert",
+            "expert",
+        ]
+    )
+
+    # Strony ofert: odstęp między pobraniami (s), ważność cache (dni), limit czasu (s).
+    offer_fetch_delay: float = Field(default=2.0, ge=0)
+    offer_cache_days: int = Field(default=14, ge=0)
+    offer_fetch_timeout: float = Field(default=20.0, ge=1)
+
     # Gmail OAuth: pliki trzymane poza repozytorium.
     gmail_credentials_path: Path = Field(
         default_factory=lambda: default_config_dir() / "credentials.json"
