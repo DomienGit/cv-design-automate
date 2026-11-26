@@ -10,8 +10,10 @@ Filtr jest deterministyczny (bez AI) i patrzy na tytuł oferty z maila:
   „Azure: brak doświadczenia” w ``O mnie.md``).
 
 Odrzucone oferty zapisujemy ze statusem ``rejected`` i powodem, żeby panel mógł je
-pokazać w osobnej sekcji. Duplikaty (ten sam numer oferty albo ta sama oferta
-wystawiona ponownie pod nowym numerem) nie trafiają do bazy drugi raz.
+pokazać w osobnej sekcji. Duplikaty (ten sam numer oferty, ta sama oferta wystawiona
+ponownie pod nowym numerem albo ta sama oferta na innym portalu) nie trafiają do bazy
+drugi raz. Ofertę z różnych portali rozpoznajemy po tytule i firmie, bez dopisków
+o płci („(k/m/n)”, „/-ka”) i form prawnych („Sp. z o.o.”, „S.A.”).
 """
 
 from __future__ import annotations
@@ -195,8 +197,34 @@ def classify_title(title: str, settings: Settings, profile: Profile | None = Non
 # --- deduplikacja i zapis --------------------------------------------------------------
 
 
+# Dopiski o płci w tytułach: „(k/m/n)”, „(m/k/os.)”, „(K/M/X)”, „(k,m)”, „(m/f/d)”.
+_GENDER_NOTE = re.compile(r"\((?:\s|[kmfdnx*/,|.]|os)+\)")
+_FEMININE_SUFFIX = re.compile(r"/\s*-?\s*(?:ka|ca|a)\b")  # „Administrator/-ka”
+# Formy prawne firm, różnie zapisywane na różnych portalach.
+_LEGAL_FORM = re.compile(
+    r"\b(?:sp\.?\s*z\s*o\.?\s*o\.?|spolka z ograniczona odpowiedzialnoscia|sp\.?\s*k\.?"
+    r"|sp\.?\s*j\.?|s\.?\s*a\.?|s\.?\s*c\.?|sp\.?\s*p\.?|ltd\.?|gmbh|inc\.?|llc"
+    r"|zrt\.?|s\.?\s*r\.?\s*o\.?|b\.?\s*v\.?)(?=\W|$)"
+)
+
+
+def _key_text(text: str) -> str:
+    return " ".join(re.sub(r"[^\w]+", " ", text).split())
+
+
+def dedupe_title(title: str) -> str:
+    """Tytuł do porównania ofert między portalami (bez dopisków o płci i interpunkcji)."""
+    text = _FEMININE_SUFFIX.sub("", _GENDER_NOTE.sub(" ", normalize(title)))
+    return _key_text(text)
+
+
+def dedupe_company(company: str | None) -> str:
+    """Firma do porównania ofert między portalami („Mindbox Sp. z o.o.” → „mindbox”)."""
+    return _key_text(_LEGAL_FORM.sub(" ", normalize(company or "")))
+
+
 def _same_offer_key(title: str, company: str | None) -> tuple[str, str]:
-    return normalize(title), normalize(company or "")
+    return dedupe_title(title), dedupe_company(company)
 
 
 @dataclass
@@ -224,7 +252,8 @@ def ingest_mail_offers(
     """Zapisuje oferty z maili: deduplikacja, filtr trafności, status i kategoria.
 
     Duplikat to oferta o tym samym kluczu ``(source, external_id)`` albo ta sama
-    oferta (tytuł + firma) dodana w ostatnich 30 dniach pod innym numerem.
+    oferta (tytuł + firma) dodana w ostatnich 30 dniach pod innym numerem lub z innego
+    portalu.
     """
     now = now or datetime.now(UTC)
     result = IngestResult()
@@ -236,7 +265,7 @@ def ingest_mail_offers(
             Offer.created_at >= now - REPOST_WINDOW
         )
     ).all()
-    seen_reposts.update(_same_offer_key(t, c) for t, c, _ in recent if c)
+    seen_reposts.update(_same_offer_key(t, c) for t, c, _ in recent if dedupe_company(c))
 
     for item in mail_offers:
         if item.key in seen_keys:
@@ -249,10 +278,10 @@ def ingest_mail_offers(
             )
         ).first()
         repost_key = _same_offer_key(item.title, item.company)
-        if existing is not None or (item.company and repost_key in seen_reposts):
+        if existing is not None or (repost_key[1] and repost_key in seen_reposts):
             result.duplicates += 1
             continue
-        if item.company:
+        if repost_key[1]:
             seen_reposts.add(repost_key)
 
         verdict = classify_title(item.title, settings, profile)

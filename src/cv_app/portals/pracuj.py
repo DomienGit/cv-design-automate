@@ -11,20 +11,15 @@ from __future__ import annotations
 
 import re
 from typing import ClassVar
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 
 from bs4 import BeautifulSoup, Tag
 
 from cv_app.mail import MailMessage
 from cv_app.portals.base import MailOffer
+from cv_app.portals.common import clean_url
 
 OFFER_URL = re.compile(r"pracuj\.pl/praca/[^\"'\s]*?,oferta,(\d+)", re.I)
-
-
-def clean_url(url: str) -> str:
-    """Adres oferty bez parametrów i fragmentu (m.in. bez ``sendid``)."""
-    parts = urlsplit(url)
-    return urlunsplit((parts.scheme or "https", parts.netloc, parts.path, "", ""))
 
 
 def _text(node: Tag) -> str:

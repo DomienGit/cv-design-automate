@@ -108,3 +108,4 @@ button.secondary:disabled { opacity: .5; cursor: not-allowed; }
   .offer-head { flex-direction: column; }
   .offer-actions { justify-content: flex-start; }
 }
+.source-tag { color: var(--accent); border-color: var(--accent); }

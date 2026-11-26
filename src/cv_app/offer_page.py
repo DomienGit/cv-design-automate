@@ -6,7 +6,8 @@ Kolejność:
    świeży (``CV_APP_OFFER_CACHE_DAYS``); inaczej pobranie z sieci, najwyżej jedna
    strona co ``CV_APP_OFFER_FETCH_DELAY`` sekund (domyślnie 2).
 2. Ekstrakcja deterministyczna: dane JSON-LD ``JobPosting``, sekcje ``data-test``
-   Pracuj.pl i nagłówki typu „Nasze wymagania” / „Your responsibilities”.
+   Pracuj.pl i nagłówki typu „Nasze wymagania” / „Your responsibilities” (także
+   nagłówki No Fluff Jobs, JustJoin.it i theprotocol.it, np. „Wymagania obowiązkowe”).
 3. Gdy z HTML nie da się wyciągnąć wymagań ani obowiązków, ekstrakcja przez AI
    (:func:`cv_app.claude_client.run_claude`) z oczyszczonego tekstu strony.
 4. Gdy nic się nie uda, oferta zostaje z danymi z maila i flagą ``incomplete``.
@@ -166,6 +167,10 @@ _SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
         "responsibilities",
         "what you will do",
         "what you'll do",
+        "your tasks",
+        "tasks",
+        "twoje zadania",
+        "zadania",
     ),
     "requirements": (
         "nasze wymagania",
@@ -175,6 +180,14 @@ _SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
         "requirements",
         "what we expect",
         "qualifications",
+        "wymagania obowiązkowe",  # No Fluff Jobs
+        "obowiązkowe",
+        "must have",
+        "must-have",
+        "obligatory",
+        "requirements: must have",
+        "oczekiwania",
+        "our expectations",
     ),
     "technologies": (
         "technologie",
@@ -182,6 +195,7 @@ _SECTION_HEADINGS: dict[str, tuple[str, ...]] = {
         "technologies we use",
         "technologies",
         "tech stack",
+        "stack technologiczny",
     ),
 }
 
@@ -304,6 +318,12 @@ def extract_from_html(html: str) -> OfferDetails:
 
     sections = _sections_by_heading(soup)
     sections.update(_sections_by_data_test(soup))
+    if ld and isinstance(ld.get("description"), str):
+        # JustJoin.it i inne: cała treść w JSON-LD ``description`` (HTML z nagłówkami).
+        for key, items in _sections_by_heading(
+            BeautifulSoup(ld["description"], "html.parser")
+        ).items():
+            sections.setdefault(key, items)
     if ld:
         sections.setdefault("responsibilities", _html_list(ld.get("responsibilities")))
         sections.setdefault(

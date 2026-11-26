@@ -15,7 +15,12 @@ def test_defaults_are_local_and_outside_repo(monkeypatch, tmp_path):
     s = Settings()
     assert s.host == "127.0.0.1"
     assert s.notes_dir == Path("profil")
-    assert s.senders == ["jobalert@wysylka.pracuj.pl"]
+    assert s.senders == [
+        "jobalert@wysylka.pracuj.pl",
+        "no-reply@justjoin.it",
+        "notifications@nofluffjobs.com",
+        "jobalert@mailing.theprotocol.it",
+    ]
     assert s.gmail_credentials_path == tmp_path / ".config/cv-app/credentials.json"
     assert s.token_path == tmp_path / ".local/share/cv-app/token.json"
     assert s.database_path == tmp_path / ".local/share/cv-app/cv-app.db"

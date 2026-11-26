@@ -147,3 +147,36 @@ def test_restore_rejected(session, settings):
     result = ingest_mail_offers(session, [mail_offer("5", "Magazynier")], settings)
     offer = restore_rejected(session, result.rejected[0])
     assert offer.status == OfferStatus.NEW
+
+
+def test_dedupe_keys_ignore_gender_notes_and_legal_forms():
+    from cv_app.relevance import dedupe_company, dedupe_title
+
+    assert dedupe_title("Administrator/-ka Systemów Linux (k/m/n)") == dedupe_title(
+        "Administrator systemów Linux (K/M/X)"
+    )
+    assert dedupe_title("Młodszy Administrator Aplikacji (m/k/os.)") == (
+        "mlodszy administrator aplikacji"
+    )
+    assert dedupe_company("Mindbox Sp. z o.o.") == dedupe_company("MINDBOX sp. z o. o.")
+    assert dedupe_company("Asseco Poland S.A.") == "asseco poland"
+
+
+def test_ingest_dedup_across_portals(session, settings):
+    pracuj = mail_offer("1", "Administrator Linux (K/M/X)", "Testowa sp. z o.o.")
+    justjoin = MailOffer(
+        source="justjoin",
+        external_id="testowa-administrator-linux-k-m-n--katowice-admin",
+        title="Administrator Linux (k/m/n)",
+        url="https://justjoin.it/job-offer/testowa-administrator-linux-k-m-n--katowice-admin",
+        company="Testowa Sp. z o.o.",
+    )
+    other = justjoin.model_copy(update={"external_id": "inna", "company": "Inna firma"})
+    first = ingest_mail_offers(session, [pracuj], settings)
+    assert len(first.added) == 1
+    second = ingest_mail_offers(session, [justjoin, other], settings)
+    assert second.duplicates == 1
+    assert [o.company for o in second.added] == ["Inna firma"]
+    assert session.exec(select(Offer).where(Offer.source == "justjoin")).one().company == (
+        "Inna firma"
+    )

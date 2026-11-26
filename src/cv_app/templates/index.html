@@ -58,6 +58,7 @@
           </div>
           <p class="tags">
             <span class="tag">#{{ o.id }}</span>
+            <span class="tag source-tag" title="Portal, z którego przyszła oferta">{{ o.source_label }}</span>
             {% if o.category %}<span class="tag">{{ o.category }}</span>{% endif %}
             {% if o.language %}<span class="tag">{{ o.language | upper }}</span>{% endif %}
             {% if o.incomplete %}<span class="tag warn-tag" title="Strona oferty się nie pobrała; są tylko dane z maila">niepełna</span>{% endif %}
@@ -87,6 +88,7 @@
           {% for o in rejected %}
           <li>
             <span>{{ o.title }}{% if o.company %} · {{ o.company }}{% endif %}
+              <span class="muted">· {{ o.source_label }}</span>
               <span class="muted">({{ o.filter_reason }})</span></span>
             <button type="button" class="secondary small" data-action="restore" data-offer-id="{{ o.id }}">Przywróć</button>
           </li>

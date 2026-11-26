@@ -175,3 +175,12 @@ def test_job_runner_background_thread():
             break
         threading.Event().wait(0.01)
     assert job.status == "done" and job.result == {"ok": True}
+
+
+def test_offer_shows_source_portal(panel):
+    with Session(panel.app.state.engine) as session:
+        session.add(Offer(source="nofluff", external_id="junior-devops-x", title="Junior DevOps"))
+        session.commit()
+    data = panel.get("/api/offers").json()
+    assert data["offers"][0]["source_label"] == "No Fluff Jobs"
+    assert "No Fluff Jobs" in panel.get("/").text

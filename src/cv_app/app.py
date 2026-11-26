@@ -17,6 +17,7 @@ from cv_app.db import init_db, make_engine
 from cv_app.jobs import Job, JobBusy, JobFn, JobRunner
 from cv_app.models import CV, Offer, OfferStatus
 from cv_app.pipeline import Log, fetch_offers, preview_cv, preview_path, restore_offer
+from cv_app.portals import source_label
 
 PACKAGE_DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=PACKAGE_DIR / "templates")
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None, *, jobs: JobRunner | None = Non
     def offer_view(offer: Offer) -> dict[str, object]:
         data = offer.model_dump(mode="json")
         data["has_preview"] = preview_path(settings, offer.id or 0).is_file()
+        data["source_label"] = source_label(offer.source)
         return data
 
     def list_offers(session: Session) -> dict[str, list[dict[str, object]]]:

@@ -108,7 +108,14 @@ Reguły czytaj z plików profilu, gdzie się da, zamiast je duplikować w kodzie
 
 - Adapter per portal w osobnym module; start: Pracuj.pl
   (`jobalert@wysylka.pracuj.pl`, mail tylko HTML, kilka ofert w jednym mailu, numer
-  oferty z linku `oferta,<numer>`, parametr `sendid` odcinać).
+  oferty z linku `oferta,<numer>`, parametr `sendid` odcinać). Dalej JustJoin.it
+  (`no-reply@justjoin.it`, numer = slug z `/job-offer/<slug>`), No Fluff Jobs
+  (`notifications@nofluffjobs.com`, linki przez tracker `mail-link.nofluffjobs.com/click/`
+  z adresem w base64 w ścieżce, numer = slug z `/job/<slug>`) i theprotocol.it
+  (`jobalert@mailing.theprotocol.it`, numer = uuid z `,oferta,<uuid>`). Wspólne
+  narzędzia (odpakowanie trackerów, czyszczenie adresów) w `portals/common.py`.
+- Ta sama oferta z kilku portali: deduplikacja po tytule i firmie (bez dopisków o płci
+  i form prawnych), pierwsza zapisana wygrywa.
 - Pobieranie stron ofert: wolno (1 strona / 2 s), z cache; gdy się nie uda, oferta
   z danymi z maila i flagą `incomplete`.
 - Filtr trafności przed pobieraniem stron; kategorie: administrator IT, DevOps,
