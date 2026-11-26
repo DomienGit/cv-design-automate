@@ -77,92 +77,35 @@ def gmail_check(settings: Settings) -> int:
 
 def offers_check(settings: Settings) -> int:
     """Gmail → filtr trafności i deduplikacja → strony ofert → baza. Bez panelu."""
-    from datetime import UTC, datetime, timedelta
-
-    from sqlmodel import Session
-
     from cv_app.db import init_db, make_engine
-    from cv_app.gmail import GmailError, build_service, fetch_messages, load_credentials
-    from cv_app.offer_page import OfferPageService
-    from cv_app.portals import offers_from_mail
-    from cv_app.profile import ProfileError, load_profile
-    from cv_app.relevance import ingest_mail_offers
-
-    try:
-        profile = load_profile(settings)
-    except ProfileError as exc:
-        print(f"Profil: {exc} (filtr działa bez reguł profilu)")
-        profile = None
-    try:
-        service = build_service(load_credentials(settings, interactive=True))
-        after = datetime.now(UTC) - timedelta(days=settings.fetch_days_back)
-        messages = fetch_messages(service, settings.senders, after)
-    except GmailError as exc:
-        print(f"Gmail: {exc}")
-        return 1
-    mail_offers = [o for m in messages for o in offers_from_mail(m)]
+    from cv_app.pipeline import PipelineError, fetch_offers
 
     engine = make_engine(settings)
     init_db(engine)
-    with Session(engine) as session:
-        result = ingest_mail_offers(session, mail_offers, settings, profile)
-        print(result.summary)
-        for offer in result.rejected:
-            print(f"  odrzucona: {offer.title} ({offer.filter_reason})")
-        if result.added:
-            print(f"Pobieram strony {len(result.added)} ofert (1 strona / 2 s)...")
-        enriched = OfferPageService(settings).enrich_all(session, result.added)
-        for offer in result.added:
-            flag = "  [niepełna]" if offer.incomplete else ""
-            print(
-                f"\n#{offer.id} {offer.title} | {offer.company or '?'} | "
-                f"{offer.category} | {offer.language}{flag}"
-            )
-            for req in offer.requirements[:5]:
-                print(f"    - {req}")
-            if offer.id in enriched.errors:
-                print(f"    błąd: {enriched.errors[offer.id]}")
-    engine.dispose()
+    try:
+        fetch_offers(settings, engine)
+    except PipelineError as exc:
+        print(exc)
+        return 1
+    finally:
+        engine.dispose()
     return 0
 
 
 def cv_preview(settings: Settings, offer_id: int) -> int:
     """Generuje bloki CV przez Claude, mierzy dopasowanie i zapisuje podgląd PDF."""
-    from sqlmodel import Session
-
-    from cv_app.claude_client import ClaudeError
     from cv_app.db import init_db, make_engine
-    from cv_app.fit import measure_fit
-    from cv_app.generator import GeneratorError, generate_blocks
-    from cv_app.models import Offer
-    from cv_app.profile import ProfileError, load_profile
-    from cv_app.render import RenderError, build_context, render_html, render_pdf
+    from cv_app.pipeline import PipelineError, preview_cv
 
     engine = make_engine(settings)
     init_db(engine)
-    with Session(engine) as session:
-        offer = session.get(Offer, offer_id)
-    engine.dispose()
-    if offer is None:
-        print(f"Nie ma oferty #{offer_id} w bazie (najpierw: uv run cv-app --offers-check).")
-        return 1
     try:
-        profile = load_profile(settings)
-        print(f"Generuję CV dla: {offer.title} ({offer.company or '?'}), to może potrwać...")
-        result = generate_blocks(profile, offer, settings=settings)
-        html = render_html(result.blocks, build_context(profile, settings))
-        report = measure_fit(html, settings)
-        out = settings.data_dir / "preview" / f"cv-oferta-{offer_id}.pdf"
-        render_pdf(html, out, settings)
-    except (ProfileError, ClaudeError, GeneratorError, RenderError) as exc:
-        print(f"Błąd: {exc}")
+        preview_cv(settings, engine, offer_id)
+    except PipelineError as exc:
+        print(exc)
         return 1
-    print(f"Wariant: {result.variant}, projekty: {', '.join(result.project_keys)}")
-    for warning in result.warnings + report.problems():
-        print(f"  uwaga: {warning}")
-    if report.fits:
-        print(f"Mieści się na stronie (wolne miejsce: {report.main.free_mm:.0f} mm).")
-    print(f"Podgląd PDF: {out}")
+    finally:
+        engine.dispose()
     return 0
 
 
