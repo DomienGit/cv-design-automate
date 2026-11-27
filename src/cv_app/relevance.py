@@ -7,8 +7,8 @@ Filtr jest deterministyczny (bez AI) i patrzy na tytuł oferty z maila:
   z wyszukiwań, które Dominik ustawił w portalach, więc są już przefiltrowane),
 - słowa wykluczające poziom (np. „senior”, „lead”) z ustawień
   ``CV_APP_RELEVANCE_EXCLUDE_KEYWORDS``,
-- technologie, których według profilu nie wolno wpisywać do CV (reguła
-  „Azure: brak doświadczenia” w ``O mnie.md``).
+Technologie zakazane w CV (np. „Azure: brak doświadczenia” w ``O mnie.md``) nie
+odrzucają oferty: bywają tylko „mile widziane”. Pilnuje ich generator i walidator CV.
 
 Odrzucone oferty zapisujemy ze statusem ``rejected`` i powodem, żeby panel mógł je
 pokazać w osobnej sekcji. Duplikaty (ten sam numer oferty, ta sama oferta wystawiona
@@ -158,20 +158,6 @@ def _contains(text: str, keyword: str) -> bool:
     )
 
 
-def excluded_technologies(profile: Profile | None) -> list[str]:
-    """Technologie z reguł profilu typu „Azure: brak doświadczenia, nigdy nie wpisywać”."""
-    if profile is None:
-        return []
-    found: list[str] = []
-    for rule in profile.rules:
-        for m in re.finditer(
-            r"([A-Z][\w+#.-]*)\s*:\s*(?:brak doświadczenia|nigdy nie wpisywać)", rule.text
-        ):
-            if m.group(1) not in found:
-                found.append(m.group(1))
-    return found
-
-
 @dataclass
 class Verdict:
     accepted: bool
@@ -182,9 +168,6 @@ class Verdict:
 def classify_title(title: str, settings: Settings, profile: Profile | None = None) -> Verdict:
     """Ocena trafności po samym tytule (dane z maila, przed pobraniem strony)."""
     text = normalize(title)
-    for tech in excluded_technologies(profile):
-        if _contains(text, tech):
-            return Verdict(False, None, f"wymaga {tech}, a profil mówi: brak doświadczenia")
     for word in settings.relevance_exclude_keywords:
         if _contains(text, word):
             return Verdict(False, None, f"poziom stanowiska: „{word}”")

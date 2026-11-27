@@ -13,7 +13,6 @@ from cv_app.portals.base import MailOffer
 from cv_app.profile import load_profile
 from cv_app.relevance import (
     classify_title,
-    excluded_technologies,
     ingest_mail_offers,
     normalize,
     restore_rejected,
@@ -102,11 +101,9 @@ def test_title_without_category_is_accepted(settings, title):
     assert "bez kategorii" in verdict.reason
 
 
-def test_profile_rule_excludes_azure(settings, profile):
-    assert excluded_technologies(profile) == ["Azure"]
-    verdict = classify_title("Junior Azure Cloud Engineer", settings, profile)
-    assert not verdict.accepted and "Azure" in verdict.reason
-    assert classify_title("Junior Azure Cloud Engineer", settings).accepted  # bez profilu
+def test_azure_does_not_reject_offer(settings, profile):
+    # Azure bywa tylko „mile widziane”; regułę profilu pilnuje generator CV, nie filtr.
+    assert classify_title("Junior Cloud Engineer (Azure)", settings, profile).accepted
 
 
 def test_exclude_keywords_from_settings(settings):

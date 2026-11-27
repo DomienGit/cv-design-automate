@@ -122,7 +122,8 @@ Reguły czytaj z plików profilu, gdzie się da, zamiast je duplikować w kodzie
   już przefiltrowane. Bierzemy tylko nowe oferty z tych wyszukiwań; sekcje polecanych
   ofert (np. theprotocol „Inne oferty wybrane dla Ciebie”, linki z `sug=`) pomijamy.
 - Filtr trafności przed pobieraniem stron jest lekki: odrzuca tylko słowa poziomu
-  (senior, lead, manager…) i technologie zakazane w profilu (Azure). Kategorie
+  (senior, lead, manager…); Azure w ofercie jej nie odrzuca (bywa „mile widziane”,
+  reguła „nigdy w CV” dotyczy tylko treści CV). Kategorie
   (administrator IT, DevOps, helpdesk, backend z Pythonem, AI/ML) to etykiety, oferta
   bez kategorii też przechodzi. Odrzucone trafiają do osobnej sekcji.
 
