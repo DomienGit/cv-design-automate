@@ -52,8 +52,11 @@
             </div>
             <div class="offer-actions">
               {% if o.has_preview %}<a class="btn" href="/offers/{{ o.id }}/cv-preview.pdf" target="_blank">Otwórz PDF</a>{% endif %}
-              <button type="button" class="secondary" data-action="cv-preview" data-offer-id="{{ o.id }}">
-                {% if o.has_preview %}Wygeneruj ponownie{% else %}Podgląd CV{% endif %}</button>
+              <button type="button" class="primary" data-action="cv-match" data-offer-id="{{ o.id }}"
+                      title="Szuka pasującego CV w bibliotece; gdy nie ma, edytuje najbliższe albo tworzy nowe">Dobierz CV</button>
+              <button type="button" class="secondary" data-action="cv-preview" data-offer-id="{{ o.id }}"
+                      title="Nowe CV z profilu, bez biblioteki gotowych CV">
+                {% if o.has_preview %}Nowe CV z profilu{% else %}Podgląd CV{% endif %}</button>
             </div>
           </div>
           <p class="tags">
@@ -65,6 +68,26 @@
             {% if o.mail_date %}<span class="tag">mail {{ o.mail_date[:10] }}</span>{% endif %}
             {% if o.has_preview and not o.preview_problems %}<span class="tag ok-tag">CV zgodne z regułami</span>{% endif %}
           </p>
+          {% if o.match %}
+          <div class="cv-match">
+            <strong>{{ o.match.label[:1] | upper }}{{ o.match.label[1:] }}</strong>{% if o.match.cv %}: {{ o.match.cv }}{% if o.match.score is not none %} ({{ o.match.score }}%){% endif %}{% endif %}
+            <span class="muted">· decyzja: {{ "AI" if o.match.by_ai else "skrypt" }}{% if o.match.by_ai and o.match.script_action %} (skrypt: {{ {"use": "bez zmian", "edit": "edycja", "new": "nowe"}[o.match.script_action] }}){% endif %}</span>
+            <p>{{ o.match.reason }}</p>
+            {% for n in o.match.notes %}<p class="muted">{{ n }}</p>{% endfor %}
+            {% if o.match.candidates %}
+            <details>
+              <summary>Porównane CV ({{ o.match.candidates | length }})</summary>
+              <ul>{% for c in o.match.candidates %}
+                <li><strong>{{ c.score }}%</strong> {{ c.key }}
+                  <span class="muted">({{ c.files | join(", ") }}{% if not c.has_source %}, bez źródła JSON{% endif %})</span>
+                  {% if c.missing %}<br><span class="muted">brakuje: {{ c.missing | join(", ") }}</span>{% endif %}</li>
+              {% endfor %}</ul>
+            </details>
+            {% endif %}
+          </div>
+          {% elif o.preview_source %}
+          <p class="muted">Źródło: {{ o.preview_source }}</p>
+          {% endif %}
           {% if o.preview_problems %}
           <div class="cv-warnings">
             <strong>CV nie przeszło walidatora ({{ o.preview_problems | length }}):</strong>
@@ -115,6 +138,10 @@
         <dd>{{ settings.notes_dir }}
           {% if settings.profile_files_present %}<span class="ok">pliki znalezione</span>
           {% else %}<span class="warn">brak plików profilu</span>{% endif %}</dd>
+        <dt>Biblioteka gotowych CV</dt>
+        <dd>{{ settings.cv_library_dir }}
+          {% if settings.cv_library_present %}<span class="ok">folder znaleziony</span>
+          {% else %}<span class="muted">brak folderu (każde CV powstanie od nowa)</span>{% endif %}</dd>
         <dt>Folder na CV</dt><dd>{{ settings.cv_output_dir }}</dd>
         <dt>Nadawcy ofert</dt><dd>{{ settings.senders | join(", ") }}</dd>
         <dt>Baza danych</dt><dd>{{ settings.database_path }}</dd>
@@ -180,7 +207,7 @@
       reload.textContent = "Odśwież listę ofert";
       reload.addEventListener("click", () => location.reload());
       jobActions.append(reload);
-      if (job.kind !== "cv-preview") location.reload();
+      if (job.kind !== "cv-preview" && job.kind !== "cv-match") location.reload();
     }
 
     async function poll(id) {
@@ -222,6 +249,7 @@
       btn.addEventListener("click", () => {
         const id = btn.dataset.offerId;
         if (btn.dataset.action === "cv-preview") startJob(`/api/offers/${id}/cv-preview`);
+        if (btn.dataset.action === "cv-match") startJob(`/api/offers/${id}/cv-match`);
         if (btn.dataset.action === "restore") startJob(`/api/offers/${id}/restore`);
       });
     });

@@ -36,6 +36,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="ID",
         help="wygeneruj przez Claude CV dla oferty o podanym numerze z bazy (podgląd PDF)",
     )
+    parser.add_argument(
+        "--cv-match",
+        type=int,
+        metavar="ID",
+        help="dobierz CV dla oferty: gotowe z biblioteki (bez zmian lub edytowane) albo nowe",
+    )
     return parser.parse_args(argv)
 
 
@@ -95,12 +101,30 @@ def offers_check(settings: Settings) -> int:
 def cv_preview(settings: Settings, offer_id: int) -> int:
     """Generuje bloki CV przez Claude, mierzy dopasowanie i zapisuje podgląd PDF."""
     from cv_app.db import init_db, make_engine
-    from cv_app.pipeline import PipelineError, preview_cv
+    from cv_app.pipeline import PipelineError, clear_match_report, preview_cv
 
     engine = make_engine(settings)
     init_db(engine)
     try:
+        clear_match_report(settings, offer_id)
         preview_cv(settings, engine, offer_id)
+    except PipelineError as exc:
+        print(exc)
+        return 1
+    finally:
+        engine.dispose()
+    return 0
+
+
+def cv_match(settings: Settings, offer_id: int) -> int:
+    """Biblioteka gotowych CV → wynik skryptu → decyzja AI → podgląd PDF."""
+    from cv_app.db import init_db, make_engine
+    from cv_app.pipeline import PipelineError, match_cv
+
+    engine = make_engine(settings)
+    init_db(engine)
+    try:
+        match_cv(settings, engine, offer_id)
     except PipelineError as exc:
         print(exc)
         return 1
@@ -118,6 +142,8 @@ def main(argv: list[str] | None = None) -> None:
         raise SystemExit(offers_check(settings))
     if args.cv_preview is not None:
         raise SystemExit(cv_preview(settings, args.cv_preview))
+    if args.cv_match is not None:
+        raise SystemExit(cv_match(settings, args.cv_match))
     app = create_app(settings)
 
     if settings.open_browser:

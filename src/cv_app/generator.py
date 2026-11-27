@@ -315,10 +315,17 @@ def build_prompt(
     candidates: list[Candidate],
     feedback: list[str] | None = None,
     previous: CVBlocks | None = None,
+    base_text: str | None = None,
 ) -> str:
     feedback_text = ""
+    if base_text and previous is None:
+        feedback_text += (
+            "\n## Gotowe CV kandydata jako baza (tekst z PDF)\n"
+            "Zachowaj jego akcenty i dobór treści tam, gdzie pasują do oferty, ale każdy "
+            "fakt i technologia muszą pochodzić z profilu powyżej.\n" + base_text + "\n"
+        )
     if feedback:
-        feedback_text = "\n## Poprawki do poprzedniej wersji (uwzględnij wszystkie)\n" + _bullets(
+        feedback_text += "\n## Poprawki do poprzedniej wersji (uwzględnij wszystkie)\n" + _bullets(
             feedback
         )
         if previous is not None:
@@ -441,11 +448,13 @@ def generate_blocks(
     settings: Settings | None = None,
     feedback: list[str] | None = None,
     previous: CVBlocks | None = None,
+    base_text: str | None = None,
 ) -> GenerationResult:
     """Generuje bloki CV pod ofertę.
 
     ``feedback`` to uwagi walidatora i pomiaru strony do poprawki, a ``previous``
-    to poprawiana wersja (AI dostaje ją w prompcie).
+    to poprawiana wersja (AI dostaje ją w prompcie). ``base_text`` to tekst gotowego
+    CV bez źródła JSON (np. z PDF), na którym AI ma oprzeć nową wersję.
     """
     settings = settings or get_settings()
     language: CVLanguage = "en" if offer.language == "en" else "pl"
@@ -464,6 +473,7 @@ def generate_blocks(
         candidates=candidates,
         feedback=feedback,
         previous=previous,
+        base_text=base_text,
     )
     model = response_model(list(by_key))
     answer = run_claude(prompt, model, settings=settings)

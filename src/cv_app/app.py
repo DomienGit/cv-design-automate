@@ -18,9 +18,12 @@ from cv_app.jobs import Job, JobBusy, JobFn, JobRunner
 from cv_app.models import CV, Offer, OfferStatus
 from cv_app.pipeline import (
     Log,
+    clear_match_report,
     fetch_offers,
+    match_cv,
     preview_cv,
     preview_path,
+    read_match_report,
     read_preview_report,
     restore_offer,
 )
@@ -56,6 +59,9 @@ def create_app(settings: Settings | None = None, *, jobs: JobRunner | None = Non
         data["has_preview"] = preview_path(settings, offer.id or 0).is_file()
         report = read_preview_report(settings, offer.id or 0) if data["has_preview"] else None
         data["preview_problems"] = report.problems if report else []
+        data["preview_source"] = report.source if report else None
+        match = read_match_report(settings, offer.id or 0) if data["has_preview"] else None
+        data["match"] = match.model_dump() if match else None
         data["source_label"] = source_label(offer.source)
         return data
 
@@ -126,6 +132,7 @@ def create_app(settings: Settings | None = None, *, jobs: JobRunner | None = Non
         offer = get_offer(session, offer_id)
 
         def run(log: Log) -> dict[str, object]:
+            clear_match_report(settings, offer_id)
             preview_cv(settings, engine, offer_id, log)
             report = read_preview_report(settings, offer_id)
             return {
@@ -135,6 +142,25 @@ def create_app(settings: Settings | None = None, *, jobs: JobRunner | None = Non
             }
 
         return start_job("cv-preview", f"Podgląd CV: {offer.title}", run)
+
+    @app.post("/api/offers/{offer_id}/cv-match")
+    def api_cv_match(
+        offer_id: int, session: Annotated[Session, Depends(get_session)]
+    ) -> dict[str, object]:
+        offer = get_offer(session, offer_id)
+
+        def run(log: Log) -> dict[str, object]:
+            match = match_cv(settings, engine, offer_id, log)
+            report = read_preview_report(settings, offer_id)
+            return {
+                "offer_id": offer_id,
+                "pdf_url": f"/offers/{offer_id}/cv-preview.pdf",
+                "action": match.action,
+                "cv": match.cv,
+                "problems": report.problems if report else [],
+            }
+
+        return start_job("cv-match", f"Dobór CV: {offer.title}", run)
 
     @app.get("/offers/{offer_id}/cv-preview.pdf")
     def cv_preview_pdf(offer_id: int) -> FileResponse:
