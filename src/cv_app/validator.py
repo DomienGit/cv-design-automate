@@ -386,3 +386,52 @@ def validate(blocks: CVBlocks, profile: Profile) -> list[Violation]:
             if violation not in out:
                 out.append(violation)
     return out
+
+
+# --- gotowe CV bez źródła (tylko tekst z PDF) ----------------------------------------
+
+
+def known_technologies(profile: Profile) -> list[str]:
+    """Znormalizowane nazwy technologii z profilu (pula umiejętności i stacki projektów)."""
+    return list(_profile_skills(profile))
+
+
+def validate_text(text: str, profile: Profile) -> list[Violation]:
+    """Reguły, które da się sprawdzić na samym tekście CV (np. z PDF bez źródła JSON).
+
+    Sprawdza zakazane technologie, deklarację płynności angielskiego, pracę zawodową
+    i znaczniki „DO UZUPEŁNIENIA”. Pełne sprawdzenie (umiejętności, projekty) wymaga
+    bloków CV, więc takie CV przy edycji przechodzi jeszcze przez :func:`validate`.
+    """
+    out: list[Violation] = []
+    for tech in forbidden_technologies(profile):
+        if re.search(rf"(?<![\w]){re.escape(tech)}(?![\w])", text, re.I):
+            out.append(Violation("forbidden-tech", f"Usuń „{tech}” z całego CV (reguła profilu)."))
+    english = profile.english
+    if english is not None and english.no_fluency:
+        for sentence in re.split(r"(?<=[.!?;])\s+|\n", text):
+            if _LANGUAGE_CONTEXT.search(sentence) and (m := _FLUENCY.search(sentence)):
+                out.append(
+                    Violation(
+                        "english-level",
+                        f"Nie pisz „{m.group(0)}” o angielskim: poziom to {english.level}.",
+                    )
+                )
+                break
+    claims = experience_claims(text)
+    if claims:
+        out.append(
+            Violation(
+                "experience",
+                "Usuń sformułowania sugerujące pracę zawodową w IT ("
+                + ", ".join(f"„{c}”" for c in claims)
+                + ").",
+            )
+        )
+    upper = text.upper()
+    out += [
+        Violation("unconfirmed", f"Usuń treść oznaczoną „{marker}”.")
+        for marker in UNCONFIRMED_MARKERS
+        if marker in upper
+    ]
+    return out

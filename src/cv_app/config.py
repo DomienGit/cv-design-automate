@@ -72,6 +72,17 @@ class Settings(BaseSettings):
     # Walidator CV: ile razy AI poprawia CV, które łamie reguły albo nie mieści się na stronie.
     cv_fix_attempts: int = Field(default=3, ge=0, le=5)
 
+    # Biblioteka gotowych CV: podfoldery per stanowisko (np. cv/DevOps/, cv/Helpdesk/)
+    # z plikami PDF, a najlepiej obok źródłem .json (bloki CV) albo .md. Przed
+    # generowaniem skrypt szuka tu pasującego CV.
+    cv_library_dir: Path = Path("cv")
+    # Progi pokrycia technologii z oferty (w %): od ``use`` CV bez zmian, od ``edit``
+    # edycja istniejącego, poniżej nowe CV. AI dostaje ``candidates`` najlepszych CV
+    # i może zmienić tę decyzję.
+    cv_match_use_threshold: int = Field(default=80, ge=0, le=100)
+    cv_match_edit_threshold: int = Field(default=50, ge=0, le=100)
+    cv_match_candidates: int = Field(default=3, ge=1, le=10)
+
     # Folder, do którego zapisujemy gotowe CV, i wzór nazwy pliku.
     cv_output_dir: Path = Field(default_factory=lambda: Path.home() / "CV")
     cv_filename_pattern: str = "CV_Dominik_{company}_{position}_{date}.pdf"
@@ -144,6 +155,7 @@ class Settings(BaseSettings):
     @field_validator(
         "data_dir",
         "notes_dir",
+        "cv_library_dir",
         "cv_output_dir",
         "gmail_credentials_path",
         "gmail_token_path",
@@ -183,6 +195,8 @@ class Settings(BaseSettings):
                 (self.notes_dir / name).is_file()
                 for name in (self.profile_about_file, self.profile_projects_file)
             ),
+            "cv_library_dir": str(self.cv_library_dir),
+            "cv_library_present": self.cv_library_dir.is_dir(),
             "cv_output_dir": str(self.cv_output_dir),
             "senders": list(self.senders),
             "fetch_days_back": self.fetch_days_back,

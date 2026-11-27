@@ -72,6 +72,27 @@ dlatego folder `profil/` jest w `.gitignore` i zostaje tylko na Twoim dysku.
 Zdjęcie do CV połóż obok jako `profil/zdjecie.jpg` (albo `.png`) lub wskaż je
 zmienną `CV_APP_PHOTO_PATH`.
 
+## Biblioteka gotowych CV
+
+W folderze `cv/` (zmienna `CV_APP_CV_LIBRARY_DIR`) trzymaj gotowe CV w podfolderach
+per stanowisko, np. `cv/DevOps/`, `cv/Helpdesk/`, `cv/Administrator Linux/`. Folder
+jest w `.gitignore`, bo CV mają dane osobowe.
+
+Przycisk „Dobierz CV” przy ofercie (albo `uv run cv-app --cv-match 5`):
+
+1. skrypt (bez AI) czyta CV z biblioteki i liczy pokrycie technologii z oferty;
+   podfolder pasujący do kategorii oferty dostaje premię,
+2. AI dostaje tylko 3 najlepsze CV (bez telefonu, e-maila i linków) i decyduje:
+   gotowe CV bez zmian, edycja albo nowe CV (progi startowe: od 80% bez zmian,
+   od 50% edycja),
+3. wynik zawsze przechodzi przez walidator reguł profilu; gotowe CV, które łamie
+   reguły, jest poprawiane.
+
+Najlepiej trzymać obok PDF źródło o tej samej nazwie: `cv-aws.pdf` + `cv-aws.json`.
+Z samego PDF tekst wyciąga skrypt, ale edycja opiera się wtedy tylko na tekście.
+Każde CV z aplikacji ma źródło obok podglądu (`cv-oferta-<nr>.blocks.json` w
+`~/.local/share/cv-app/preview/`), które można skopiować do biblioteki razem z PDF.
+
 ## Rozwój
 
 ```bash

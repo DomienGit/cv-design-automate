@@ -14,8 +14,9 @@ data/
 *.sqlite3
 output/
 
-# Dane osobowe z profilu i przykładowe maile
+# Dane osobowe: profil, biblioteka gotowych CV (/cv/) i przykładowe maile
 profil/
+/cv/
 *.eml
 
 # Python / uv
