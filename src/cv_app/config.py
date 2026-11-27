@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     claude_timeout: int = Field(default=300, ge=10)  # sekundy na jedno wywołanie
     claude_retries: int = Field(default=2, ge=0, le=5)  # ponowienia po błędzie
 
+    # Walidator CV: ile razy AI poprawia CV, które łamie reguły albo nie mieści się na stronie.
+    cv_fix_attempts: int = Field(default=3, ge=0, le=5)
+
     # Folder, do którego zapisujemy gotowe CV, i wzór nazwy pliku.
     cv_output_dir: Path = Field(default_factory=lambda: Path.home() / "CV")
     cv_filename_pattern: str = "CV_Dominik_{company}_{position}_{date}.pdf"

@@ -63,7 +63,14 @@
             {% if o.language %}<span class="tag">{{ o.language | upper }}</span>{% endif %}
             {% if o.incomplete %}<span class="tag warn-tag" title="Strona oferty się nie pobrała; są tylko dane z maila">niepełna</span>{% endif %}
             {% if o.mail_date %}<span class="tag">mail {{ o.mail_date[:10] }}</span>{% endif %}
+            {% if o.has_preview and not o.preview_problems %}<span class="tag ok-tag">CV zgodne z regułami</span>{% endif %}
           </p>
+          {% if o.preview_problems %}
+          <div class="cv-warnings">
+            <strong>CV nie przeszło walidatora ({{ o.preview_problems | length }}):</strong>
+            <ul>{% for p in o.preview_problems %}<li>{{ p }}</li>{% endfor %}</ul>
+          </div>
+          {% endif %}
           {% if o.requirements or o.responsibilities or o.technologies %}
           <details>
             <summary>Szczegóły oferty</summary>

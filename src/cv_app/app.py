@@ -16,7 +16,14 @@ from cv_app.config import Settings, get_settings
 from cv_app.db import init_db, make_engine
 from cv_app.jobs import Job, JobBusy, JobFn, JobRunner
 from cv_app.models import CV, Offer, OfferStatus
-from cv_app.pipeline import Log, fetch_offers, preview_cv, preview_path, restore_offer
+from cv_app.pipeline import (
+    Log,
+    fetch_offers,
+    preview_cv,
+    preview_path,
+    read_preview_report,
+    restore_offer,
+)
 from cv_app.portals import source_label
 
 PACKAGE_DIR = Path(__file__).parent
@@ -47,6 +54,8 @@ def create_app(settings: Settings | None = None, *, jobs: JobRunner | None = Non
     def offer_view(offer: Offer) -> dict[str, object]:
         data = offer.model_dump(mode="json")
         data["has_preview"] = preview_path(settings, offer.id or 0).is_file()
+        report = read_preview_report(settings, offer.id or 0) if data["has_preview"] else None
+        data["preview_problems"] = report.problems if report else []
         data["source_label"] = source_label(offer.source)
         return data
 
@@ -118,7 +127,12 @@ def create_app(settings: Settings | None = None, *, jobs: JobRunner | None = Non
 
         def run(log: Log) -> dict[str, object]:
             preview_cv(settings, engine, offer_id, log)
-            return {"offer_id": offer_id, "pdf_url": f"/offers/{offer_id}/cv-preview.pdf"}
+            report = read_preview_report(settings, offer_id)
+            return {
+                "offer_id": offer_id,
+                "pdf_url": f"/offers/{offer_id}/cv-preview.pdf",
+                "problems": report.problems if report else [],
+            }
 
         return start_job("cv-preview", f"Podgląd CV: {offer.title}", run)
 
