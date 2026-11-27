@@ -290,10 +290,20 @@ LANGUAGE_RULES = {
     "en": (
         "Oferta jest po angielsku, więc całe CV po angielsku: przetłumacz podsumowanie, "
         "punkty, nazwy grup umiejętności i wykształcenie. Nazwy technologii zostają "
-        "bez zmian. Poziom angielskiego to B1: nigdy „fluent”, „proficient”, "
-        "„advanced”."
+        "bez zmian."
     ),
 }
+
+
+def english_rule(profile: Profile) -> str:
+    """Poziom angielskiego z profilu i zakaz deklarowania płynności, jeśli profil go ma."""
+    english = profile.english
+    if english is None:
+        return ""
+    text = f"Poziom angielskiego to {english.level} (tak jak w profilu)."
+    if english.no_fluency:
+        text += " Nigdy „płynny”, „biegły”, „fluent”, „proficient”."
+    return text
 
 
 def build_prompt(
@@ -304,15 +314,21 @@ def build_prompt(
     variant: SummaryVariant,
     candidates: list[Candidate],
     feedback: list[str] | None = None,
+    previous: CVBlocks | None = None,
 ) -> str:
     feedback_text = ""
     if feedback:
         feedback_text = "\n## Poprawki do poprzedniej wersji (uwzględnij wszystkie)\n" + _bullets(
             feedback
         )
+        if previous is not None:
+            feedback_text += (
+                "\n\nPoprzednia wersja (popraw tylko to, czego dotyczą uwagi; resztę zostaw):\n"
+                + previous.model_dump_json(exclude={"languages"}, indent=1)
+            )
     return PROMPT.format(
         language_name="polski" if language == "pl" else "angielski",
-        language_rules=LANGUAGE_RULES[language],
+        language_rules=" ".join(filter(None, [LANGUAGE_RULES[language], english_rule(profile)])),
         offer=_offer_section(offer),
         variant_name=variant.name,
         variant_text=sanitize_source_text(variant.text),
@@ -424,8 +440,13 @@ def generate_blocks(
     *,
     settings: Settings | None = None,
     feedback: list[str] | None = None,
+    previous: CVBlocks | None = None,
 ) -> GenerationResult:
-    """Generuje bloki CV pod ofertę. ``feedback`` to uwagi walidatora do poprawki."""
+    """Generuje bloki CV pod ofertę.
+
+    ``feedback`` to uwagi walidatora i pomiaru strony do poprawki, a ``previous``
+    to poprawiana wersja (AI dostaje ją w prompcie).
+    """
     settings = settings or get_settings()
     language: CVLanguage = "en" if offer.language == "en" else "pl"
     category = offer_category(offer, settings)
@@ -442,6 +463,7 @@ def generate_blocks(
         variant=variant,
         candidates=candidates,
         feedback=feedback,
+        previous=previous,
     )
     model = response_model(list(by_key))
     answer = run_claude(prompt, model, settings=settings)

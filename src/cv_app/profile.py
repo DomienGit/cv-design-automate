@@ -117,6 +117,11 @@ class Language(BaseModel):
     level: str
     note: str | None = None
 
+    @property
+    def no_fluency(self) -> bool:
+        """Dopisek w profilu zabrania deklarowania płynności (np. „nie deklarować płynności”)."""
+        return bool(self.note and re.search(r"płynn|fluent", self.note, re.I))
+
 
 class Profile(BaseModel):
     contact: Contact
@@ -136,6 +141,10 @@ class Profile(BaseModel):
             if wanted in (p.key.lower(), (p.cv_name or "").lower()):
                 return p
         return None
+
+    @property
+    def english(self) -> Language | None:
+        return next((x for x in self.languages if x.name.lower() in ("angielski", "english")), None)
 
     def variant(self, name: str) -> SummaryVariant | None:
         wanted = name.strip().lower()

@@ -84,7 +84,8 @@ Reguły z calloutów `[!important]` sprawdza walidator w każdym CV:
 - Omega Faktury, PapuTrain, web_page_cv: podawać wprost, że powstały z użyciem narzędzi
   AI; nie pisać, że kod jest pisany ręcznie.
 - terraform-3tier i AWS-project-01 to zawsze jeden projekt (terraform-3tier).
-- Angielski B1, nigdy „płynny” / „fluent”.
+- Angielski: poziom z profilu (`## Języki` w `O mnie.md`, obecnie B1); nigdy „płynny” /
+  „fluent”, dopóki profil ma dopisek „nie deklarować płynności”.
 - Umiejętności z dopiskiem „podstawy” lub „teoria” zostają z tym dopiskiem
   (np. Ansible, Kubernetes, ITIL).
 - Azure: brak doświadczenia, nigdy w CV.

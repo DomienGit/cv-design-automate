@@ -184,3 +184,20 @@ def test_offer_shows_source_portal(panel):
     data = panel.get("/api/offers").json()
     assert data["offers"][0]["source_label"] == "No Fluff Jobs"
     assert "No Fluff Jobs" in panel.get("/").text
+
+
+def test_panel_shows_validator_warnings(panel, settings):
+    from cv_app.pipeline import PreviewReport, preview_path, write_preview_report
+
+    offer_id = _add_offer(panel)
+    pdf = preview_path(settings, offer_id)
+    pdf.parent.mkdir(parents=True, exist_ok=True)
+    pdf.write_bytes(b"%PDF")
+    write_preview_report(
+        settings, offer_id, PreviewReport(ok=False, problems=["Usuń „Azure” z całego CV"])
+    )
+    html = panel.get("/").text
+    assert "CV nie przeszło walidatora (1)" in html and "Usuń „Azure”" in html
+
+    write_preview_report(settings, offer_id, PreviewReport(ok=True))
+    assert "CV zgodne z regułami" in panel.get("/").text

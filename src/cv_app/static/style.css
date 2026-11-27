@@ -109,3 +109,9 @@ button.secondary:disabled { opacity: .5; cursor: not-allowed; }
   .offer-actions { justify-content: flex-start; }
 }
 .source-tag { color: var(--accent); border-color: var(--accent); }
+.ok-tag { color: var(--ok); border-color: var(--ok); }
+.cv-warnings {
+  margin-top: .5rem; padding: .5rem .75rem; border: 1px solid var(--warn); border-radius: 8px;
+  color: var(--warn); font-size: .85rem;
+}
+.cv-warnings ul { margin: .25rem 0 0; padding-left: 1.1rem; }
