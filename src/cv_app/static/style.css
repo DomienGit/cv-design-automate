@@ -65,3 +65,47 @@ button.primary:disabled { opacity: .5; cursor: not-allowed; }
   .settings { grid-template-columns: 1fr; }
   .settings dd { margin-bottom: .5rem; }
 }
+
+/* Oferty */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.toolbar .muted { font-size: .85rem; }
+button.secondary, a.btn {
+  display: inline-block; background: none; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 8px; padding: .4rem .8rem;
+  font: inherit; font-size: .9rem; cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+button.secondary.small { padding: .2rem .6rem; font-size: .85rem; }
+button.secondary:disabled { opacity: .5; cursor: not-allowed; }
+.job {
+  border: 1px solid var(--border); border-radius: 8px; padding: .75rem; margin-bottom: 1rem;
+}
+.job.error { border-color: var(--warn); }
+.job-head { display: flex; gap: .75rem; align-items: baseline; }
+.job pre {
+  margin: .5rem 0; max-height: 14rem; overflow: auto; white-space: pre-wrap;
+  font-size: .8rem; color: var(--muted);
+}
+#job-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.offers { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.offer { border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; }
+.offer-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.offer h3 { margin: 0; font-size: 1.05rem; }
+.offer h3 a { color: inherit; }
+.offer .meta { margin: .15rem 0 0; color: var(--muted); font-size: .9rem; }
+.offer-actions { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+.tags { margin: .5rem 0 0; display: flex; flex-wrap: wrap; gap: .35rem; }
+.tag {
+  font-size: .75rem; padding: .1rem .5rem; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+}
+.warn-tag { color: var(--warn); border-color: var(--warn); }
+.offer details { margin-top: .5rem; font-size: .9rem; }
+.offer details summary, .rejected summary { cursor: pointer; color: var(--accent); }
+.rejected { margin-top: 1.25rem; }
+.rejected ul { list-style: none; padding: 0; margin: .5rem 0 0; display: grid; gap: .4rem; }
+.rejected li { display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+@media (max-width: 600px) {
+  .offer-head { flex-direction: column; }
+  .offer-actions { justify-content: flex-start; }
+}
+.source-tag { color: var(--accent); border-color: var(--accent); }

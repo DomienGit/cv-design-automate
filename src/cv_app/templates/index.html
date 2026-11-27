@@ -21,9 +21,81 @@
   <main>
     <section id="tab-offers" class="panel" role="tabpanel">
       <div class="toolbar">
-        <button class="primary" disabled title="Dostępne w kolejnym etapie">Pobierz oferty</button>
+        <button id="fetch-offers" class="primary" type="button">Pobierz oferty</button>
+        <span class="muted">Maile z ostatnich {{ settings.fetch_days_back }} dni od: {{ settings.senders | join(", ") }}</span>
       </div>
-      <p class="empty">Brak ofert. Pobieranie z Gmaila pojawi się w kolejnym etapie.</p>
+
+      <div id="job" class="job{% if job and job.status == 'error' %} error{% endif %}"
+           {% if not job %}hidden{% endif %}
+           {% if job and job.status == "running" %}data-job-id="{{ job.id }}"{% endif %}>
+        <div class="job-head">
+          <strong id="job-label">{{ job.label if job else "" }}</strong>
+          <span id="job-status" class="muted">{% if job %}{{ {"running": "trwa…", "done": "gotowe", "error": "błąd"}[job.status] }}{% endif %}</span>
+        </div>
+        <pre id="job-log">{% if job %}{{ job.log | join("\n") }}{% if job.error %}
+{{ job.error }}{% endif %}{% endif %}</pre>
+        <div id="job-actions">{% if job and job.result.pdf_url %}<a class="btn" href="{{ job.result.pdf_url }}" target="_blank">Otwórz podgląd PDF</a>{% endif %}</div>
+      </div>
+
+      {% if offers %}
+      <ul class="offers">
+        {% for o in offers %}
+        <li class="offer" data-offer-id="{{ o.id }}">
+          <div class="offer-head">
+            <div>
+              <h3>{% if o.url %}<a href="{{ o.url }}" target="_blank" rel="noopener">{{ o.title }}</a>{% else %}{{ o.title }}{% endif %}</h3>
+              <p class="meta">
+                {{ o.company or "firma nieznana" }}
+                {% if o.locations %} · {{ o.locations | join(", ") }}{% endif %}
+                {% if o.salary %} · {{ o.salary }}{% endif %}
+              </p>
+            </div>
+            <div class="offer-actions">
+              {% if o.has_preview %}<a class="btn" href="/offers/{{ o.id }}/cv-preview.pdf" target="_blank">Otwórz PDF</a>{% endif %}
+              <button type="button" class="secondary" data-action="cv-preview" data-offer-id="{{ o.id }}">
+                {% if o.has_preview %}Wygeneruj ponownie{% else %}Podgląd CV{% endif %}</button>
+            </div>
+          </div>
+          <p class="tags">
+            <span class="tag">#{{ o.id }}</span>
+            <span class="tag source-tag" title="Portal, z którego przyszła oferta">{{ o.source_label }}</span>
+            {% if o.category %}<span class="tag">{{ o.category }}</span>{% endif %}
+            {% if o.language %}<span class="tag">{{ o.language | upper }}</span>{% endif %}
+            {% if o.incomplete %}<span class="tag warn-tag" title="Strona oferty się nie pobrała; są tylko dane z maila">niepełna</span>{% endif %}
+            {% if o.mail_date %}<span class="tag">mail {{ o.mail_date[:10] }}</span>{% endif %}
+          </p>
+          {% if o.requirements or o.responsibilities or o.technologies %}
+          <details>
+            <summary>Szczegóły oferty</summary>
+            {% if o.technologies %}<p><strong>Technologie:</strong> {{ o.technologies | join(", ") }}</p>{% endif %}
+            {% if o.requirements %}<p><strong>Wymagania</strong></p>
+            <ul>{% for r in o.requirements %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+            {% if o.responsibilities %}<p><strong>Obowiązki</strong></p>
+            <ul>{% for r in o.responsibilities %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+          </details>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty">Brak ofert. Kliknij „Pobierz oferty”, żeby sprawdzić Gmaila.</p>
+      {% endif %}
+
+      {% if rejected %}
+      <details class="rejected">
+        <summary>Odrzucone przez filtr ({{ rejected | length }})</summary>
+        <ul>
+          {% for o in rejected %}
+          <li>
+            <span>{{ o.title }}{% if o.company %} · {{ o.company }}{% endif %}
+              <span class="muted">· {{ o.source_label }}</span>
+              <span class="muted">({{ o.filter_reason }})</span></span>
+            <button type="button" class="secondary small" data-action="restore" data-offer-id="{{ o.id }}">Przywróć</button>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
     </section>
 
     <section id="tab-cvs" class="panel" role="tabpanel" hidden>
@@ -61,6 +133,93 @@
         });
       });
     });
+
+    const jobBox = document.getElementById("job");
+    const jobLabel = document.getElementById("job-label");
+    const jobStatus = document.getElementById("job-status");
+    const jobLog = document.getElementById("job-log");
+    const jobActions = document.getElementById("job-actions");
+    const actionButtons = () => document.querySelectorAll("#fetch-offers, [data-action]");
+
+    function setBusy(busy) {
+      actionButtons().forEach((b) => { b.disabled = busy; });
+    }
+
+    function showJob(job) {
+      jobBox.hidden = false;
+      jobLabel.textContent = job.label;
+      jobLog.textContent = job.log.join("\n") + (job.error ? "\n" + job.error : "");
+      jobLog.scrollTop = jobLog.scrollHeight;
+      jobBox.classList.toggle("error", job.status === "error");
+      jobStatus.textContent = { running: "trwa…", done: "gotowe", error: "błąd" }[job.status];
+    }
+
+    function finishJob(job) {
+      setBusy(false);
+      jobActions.replaceChildren();
+      if (job.status === "error") return;
+      if (job.result && job.result.pdf_url) {
+        const a = document.createElement("a");
+        a.href = job.result.pdf_url + "?t=" + Date.now();
+        a.target = "_blank";
+        a.className = "btn";
+        a.textContent = "Otwórz podgląd PDF";
+        jobActions.append(a);
+        window.open(a.href, "_blank");
+      }
+      const reload = document.createElement("button");
+      reload.type = "button";
+      reload.className = "secondary";
+      reload.textContent = "Odśwież listę ofert";
+      reload.addEventListener("click", () => location.reload());
+      jobActions.append(reload);
+      if (job.kind !== "cv-preview") location.reload();
+    }
+
+    async function poll(id) {
+      setBusy(true);
+      while (true) {
+        let job;
+        try {
+          const r = await fetch("/api/jobs/" + id);
+          job = await r.json();
+        } catch (e) {
+          jobStatus.textContent = "brak połączenia z serwerem";
+          setBusy(false);
+          return;
+        }
+        showJob(job);
+        if (job.status !== "running") return finishJob(job);
+        await new Promise((res) => setTimeout(res, 1000));
+      }
+    }
+
+    async function startJob(url) {
+      jobActions.replaceChildren();
+      setBusy(true);
+      const r = await fetch(url, { method: "POST" });
+      const data = await r.json();
+      if (!r.ok) {
+        setBusy(false);
+        jobBox.hidden = false;
+        jobStatus.textContent = data.detail || "błąd";
+        return;
+      }
+      showJob(data);
+      if (data.status === "running") poll(data.id); else finishJob(data);
+    }
+
+    document.getElementById("fetch-offers").addEventListener("click", () =>
+      startJob("/api/offers/fetch"));
+    document.querySelectorAll("[data-action]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.offerId;
+        if (btn.dataset.action === "cv-preview") startJob(`/api/offers/${id}/cv-preview`);
+        if (btn.dataset.action === "restore") startJob(`/api/offers/${id}/restore`);
+      });
+    });
+
+    if (jobBox.dataset.jobId) poll(jobBox.dataset.jobId);
   </script>
 </body>
 </html>
