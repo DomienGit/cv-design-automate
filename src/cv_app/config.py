@@ -74,7 +74,15 @@ class Settings(BaseSettings):
     cv_filename_pattern: str = "CV_Dominik_{company}_{position}_{date}.pdf"
 
     # Poczta: nadawcy, od których pobieramy oferty.
-    senders: list[str] = Field(default_factory=lambda: ["jobalert@wysylka.pracuj.pl"])
+    # Domyślnie wszyscy nadawcy, dla których jest adapter w ``cv_app.portals``.
+    senders: list[str] = Field(
+        default_factory=lambda: [
+            "jobalert@wysylka.pracuj.pl",
+            "no-reply@justjoin.it",
+            "notifications@nofluffjobs.com",
+            "jobalert@mailing.theprotocol.it",
+        ]
+    )
     fetch_days_back: int = Field(default=7, ge=1)
 
     # Filtr trafności: oferty z tymi słowami w tytule są odrzucane (poziom stanowiska).

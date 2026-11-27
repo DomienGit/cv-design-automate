@@ -108,11 +108,24 @@ Reguły czytaj z plików profilu, gdzie się da, zamiast je duplikować w kodzie
 
 - Adapter per portal w osobnym module; start: Pracuj.pl
   (`jobalert@wysylka.pracuj.pl`, mail tylko HTML, kilka ofert w jednym mailu, numer
-  oferty z linku `oferta,<numer>`, parametr `sendid` odcinać).
+  oferty z linku `oferta,<numer>`, parametr `sendid` odcinać). Dalej JustJoin.it
+  (`no-reply@justjoin.it`, numer = slug z `/job-offer/<slug>`), No Fluff Jobs
+  (`notifications@nofluffjobs.com`, linki przez tracker `mail-link.nofluffjobs.com/click/`
+  z adresem w base64 w ścieżce, numer = slug z `/job/<slug>`) i theprotocol.it
+  (`jobalert@mailing.theprotocol.it`, numer = uuid z `,oferta,<uuid>`). Wspólne
+  narzędzia (odpakowanie trackerów, czyszczenie adresów) w `portals/common.py`.
+- Ta sama oferta z kilku portali: deduplikacja po tytule i firmie (bez dopisków o płci
+  i form prawnych), pierwsza zapisana wygrywa.
 - Pobieranie stron ofert: wolno (1 strona / 2 s), z cache; gdy się nie uda, oferta
   z danymi z maila i flagą `incomplete`.
-- Filtr trafności przed pobieraniem stron; kategorie: administrator IT, DevOps,
-  helpdesk, backend z Pythonem, AI/ML. Odrzucone trafiają do osobnej sekcji.
+- Maile zawierają oferty z wyszukiwań ustawionych przez Dominika w portalach, więc są
+  już przefiltrowane. Bierzemy tylko nowe oferty z tych wyszukiwań; sekcje polecanych
+  ofert (np. theprotocol „Inne oferty wybrane dla Ciebie”, linki z `sug=`) pomijamy.
+- Filtr trafności przed pobieraniem stron jest lekki: odrzuca tylko słowa poziomu
+  (senior, lead, manager…); Azure w ofercie jej nie odrzuca (bywa „mile widziane”,
+  reguła „nigdy w CV” dotyczy tylko treści CV). Kategorie
+  (administrator IT, DevOps, helpdesk, backend z Pythonem, AI/ML) to etykiety, oferta
+  bez kategorii też przechodzi. Odrzucone trafiają do osobnej sekcji.
 
 ## Konwencje
 

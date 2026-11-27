@@ -13,7 +13,6 @@ from cv_app.portals.base import MailOffer
 from cv_app.profile import load_profile
 from cv_app.relevance import (
     classify_title,
-    excluded_technologies,
     ingest_mail_offers,
     normalize,
     restore_rejected,
@@ -83,11 +82,6 @@ def test_classify_accepts_categories(settings, title, category):
         ("Sr. Python Developer", "sr"),
         ("Team Leader Service Desk", "lead"),
         ("IT Manager", "manager"),
-        ("Administrator nieruchomości", "nie pasuje"),
-        ("Specjalista ds. administracji biura", "nie pasuje"),
-        ("Magazynier", "nie pasuje"),
-        ("Specjalista ds. automatyzacji procesów produkcyjnych", "nie pasuje"),
-        ("Specjalista ds. obsługi klienta", "nie pasuje"),
     ],
 )
 def test_classify_rejects(settings, title, reason_part):
@@ -96,11 +90,20 @@ def test_classify_rejects(settings, title, reason_part):
     assert reason_part in verdict.reason
 
 
-def test_profile_rule_excludes_azure(settings, profile):
-    assert excluded_technologies(profile) == ["Azure"]
-    verdict = classify_title("Junior Azure Cloud Engineer", settings, profile)
-    assert not verdict.accepted and "Azure" in verdict.reason
-    assert classify_title("Junior Azure Cloud Engineer", settings).accepted  # bez profilu
+@pytest.mark.parametrize(
+    "title",
+    ["Administrator/-ka Systemów Aplikacyjnych", "Junior Java Engineer", "Magazynier"],
+)
+def test_title_without_category_is_accepted(settings, title):
+    # Maile zawierają oferty z wyszukiwań ustawionych w portalach: kategoria to etykieta.
+    verdict = classify_title(title, settings)
+    assert verdict.accepted and verdict.category is None
+    assert "bez kategorii" in verdict.reason
+
+
+def test_azure_does_not_reject_offer(settings, profile):
+    # Azure bywa tylko „mile widziane”; regułę profilu pilnuje generator CV, nie filtr.
+    assert classify_title("Junior Cloud Engineer (Azure)", settings, profile).accepted
 
 
 def test_exclude_keywords_from_settings(settings):
@@ -144,6 +147,39 @@ def test_ingest_dedup_and_filter(session, settings, profile):
 
 
 def test_restore_rejected(session, settings):
-    result = ingest_mail_offers(session, [mail_offer("5", "Magazynier")], settings)
+    result = ingest_mail_offers(session, [mail_offer("5", "Senior Magazynier")], settings)
     offer = restore_rejected(session, result.rejected[0])
     assert offer.status == OfferStatus.NEW
+
+
+def test_dedupe_keys_ignore_gender_notes_and_legal_forms():
+    from cv_app.relevance import dedupe_company, dedupe_title
+
+    assert dedupe_title("Administrator/-ka Systemów Linux (k/m/n)") == dedupe_title(
+        "Administrator systemów Linux (K/M/X)"
+    )
+    assert dedupe_title("Młodszy Administrator Aplikacji (m/k/os.)") == (
+        "mlodszy administrator aplikacji"
+    )
+    assert dedupe_company("Mindbox Sp. z o.o.") == dedupe_company("MINDBOX sp. z o. o.")
+    assert dedupe_company("Asseco Poland S.A.") == "asseco poland"
+
+
+def test_ingest_dedup_across_portals(session, settings):
+    pracuj = mail_offer("1", "Administrator Linux (K/M/X)", "Testowa sp. z o.o.")
+    justjoin = MailOffer(
+        source="justjoin",
+        external_id="testowa-administrator-linux-k-m-n--katowice-admin",
+        title="Administrator Linux (k/m/n)",
+        url="https://justjoin.it/job-offer/testowa-administrator-linux-k-m-n--katowice-admin",
+        company="Testowa Sp. z o.o.",
+    )
+    other = justjoin.model_copy(update={"external_id": "inna", "company": "Inna firma"})
+    first = ingest_mail_offers(session, [pracuj], settings)
+    assert len(first.added) == 1
+    second = ingest_mail_offers(session, [justjoin, other], settings)
+    assert second.duplicates == 1
+    assert [o.company for o in second.added] == ["Inna firma"]
+    assert session.exec(select(Offer).where(Offer.source == "justjoin")).one().company == (
+        "Inna firma"
+    )

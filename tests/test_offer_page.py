@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import time
 from pathlib import Path
@@ -229,3 +230,20 @@ def test_enrich_without_ai_marks_incomplete(session, settings):
     svc, _, _ = service(settings, {offer.url: "<html><body>pusto</body></html>"}, use_ai=False)
     svc.enrich(offer)
     assert offer.incomplete and offer.fetched_at is not None
+
+
+def test_extracts_sections_from_json_ld_description():
+    from cv_app.offer_page import extract_from_html
+
+    description = (
+        "<h3>Wymagania obowiązkowe</h3><ul><li>Linux</li><li>Docker</li></ul>"
+        "<h3>Twoje zadania</h3><ul><li>Utrzymanie CI/CD</li></ul>"
+    )
+    ld = json.dumps({"@type": "JobPosting", "title": "Junior DevOps", "description": description})
+    html = (
+        f'<html><head><script type="application/ld+json">{ld}</script></head>'
+        "<body><h1>Junior DevOps</h1></body></html>"
+    )
+    details = extract_from_html(html)
+    assert details.requirements == ["Linux", "Docker"]
+    assert details.responsibilities == ["Utrzymanie CI/CD"]
