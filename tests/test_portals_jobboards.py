@@ -101,9 +101,8 @@ def test_theprotocol_offers():
     assert [o.external_id for o in offers] == [
         "01000000-aaaa-bbbb-cccc-000000000001",
         "01000000-aaaa-bbbb-cccc-000000000002",
-        "01000000-aaaa-bbbb-cccc-000000000003",
-    ]
-    py, devops, manager = offers
+    ]  # „Inne oferty wybrane dla Ciebie” (link z ``sug=``) pominięta
+    py, devops = offers
     assert py.url == (
         "https://theprotocol.it/szczegoly/praca/junior-python-backend-developer-warszawa,"
         "oferta,01000000-aaaa-bbbb-cccc-000000000001"
@@ -115,7 +114,6 @@ def test_theprotocol_offers():
     assert devops.salary is None
     assert devops.company == "Chmura - Test Sp. z o.o."
     assert devops.locations == ["Kraków"]
-    assert manager.title == "Engineering Manager"  # polecana oferta też trafia do filtra
 
 
 def test_empty_html_gives_no_offers():

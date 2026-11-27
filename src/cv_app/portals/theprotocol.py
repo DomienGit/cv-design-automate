@@ -3,15 +3,18 @@
 Mail jest tylko w HTML. Oferta to kilka linków do tej samej strony
 ``https://theprotocol.it/szczegoly/praca/<slug>,oferta,<uuid>?utm_...``: logo, tytuł,
 opcjonalnie wynagrodzenie („max 70 zł / hr.”) i „Firma - Miasto, dzielnica”. Linki
-nie mają klas, więc rozpoznajemy je po kolejności i treści. Pod listą z alertu mail
-dokłada polecane oferty (parametr ``sug``); bierzemy je też, filtr trafności i tak
-je oceni. Numerem oferty jest ``uuid``.
+nie mają klas, więc rozpoznajemy je po kolejności i treści. Numerem oferty jest ``uuid``.
+
+Pod listą z obserwowanego wyszukiwania mail dokłada sekcję „Inne oferty wybrane dla
+Ciebie”; jej linki mają parametr ``sug``. Te oferty pomijamy: bierzemy tylko nowe
+oferty z wyszukiwań ustawionych w portalu.
 """
 
 from __future__ import annotations
 
 import re
 from typing import ClassVar
+from urllib.parse import parse_qs, urlsplit
 
 from bs4 import BeautifulSoup, Tag
 
@@ -51,7 +54,10 @@ class TheProtocolAdapter:
         soup = BeautifulSoup(html, "html.parser")
         links: dict[str, list[tuple[str, Tag]]] = {}
         for a in soup.find_all("a", href=True):
-            url = clean_url(unwrap_tracking(a["href"]))
+            target = unwrap_tracking(a["href"])
+            if "sug" in parse_qs(urlsplit(target).query):
+                continue  # „Inne oferty wybrane dla Ciebie”, nie z wyszukiwania
+            url = clean_url(target)
             m = OFFER_URL.match(url)
             if m:
                 links.setdefault(m.group(1).lower(), []).append((url, a))

@@ -83,17 +83,23 @@ def test_classify_accepts_categories(settings, title, category):
         ("Sr. Python Developer", "sr"),
         ("Team Leader Service Desk", "lead"),
         ("IT Manager", "manager"),
-        ("Administrator nieruchomości", "nie pasuje"),
-        ("Specjalista ds. administracji biura", "nie pasuje"),
-        ("Magazynier", "nie pasuje"),
-        ("Specjalista ds. automatyzacji procesów produkcyjnych", "nie pasuje"),
-        ("Specjalista ds. obsługi klienta", "nie pasuje"),
     ],
 )
 def test_classify_rejects(settings, title, reason_part):
     verdict = classify_title(title, settings)
     assert not verdict.accepted
     assert reason_part in verdict.reason
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["Administrator/-ka Systemów Aplikacyjnych", "Junior Java Engineer", "Magazynier"],
+)
+def test_title_without_category_is_accepted(settings, title):
+    # Maile zawierają oferty z wyszukiwań ustawionych w portalach: kategoria to etykieta.
+    verdict = classify_title(title, settings)
+    assert verdict.accepted and verdict.category is None
+    assert "bez kategorii" in verdict.reason
 
 
 def test_profile_rule_excludes_azure(settings, profile):
@@ -144,7 +150,7 @@ def test_ingest_dedup_and_filter(session, settings, profile):
 
 
 def test_restore_rejected(session, settings):
-    result = ingest_mail_offers(session, [mail_offer("5", "Magazynier")], settings)
+    result = ingest_mail_offers(session, [mail_offer("5", "Senior Magazynier")], settings)
     offer = restore_rejected(session, result.rejected[0])
     assert offer.status == OfferStatus.NEW
 

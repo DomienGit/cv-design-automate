@@ -2,8 +2,9 @@
 
 Filtr jest deterministyczny (bez AI) i patrzy na tytuł oferty z maila:
 
-- kategoria: administrator IT, DevOps, helpdesk, backend z Pythonem, AI/ML; oferta
-  bez żadnej kategorii jest odrzucana,
+- kategoria: administrator IT, DevOps, helpdesk, backend z Pythonem, AI/ML; to tylko
+  etykieta w panelu, oferta bez kategorii też przechodzi (maile zawierają oferty
+  z wyszukiwań, które Dominik ustawił w portalach, więc są już przefiltrowane),
 - słowa wykluczające poziom (np. „senior”, „lead”) z ustawień
   ``CV_APP_RELEVANCE_EXCLUDE_KEYWORDS``,
 - technologie, których według profilu nie wolno wpisywać do CV (reguła
@@ -191,7 +192,9 @@ def classify_title(title: str, settings: Settings, profile: Profile | None = Non
         hit = next((k for k in keywords if _contains(text, k)), None)
         if hit:
             return Verdict(True, category, f"{CATEGORY_LABELS[category]} (słowo „{hit}”)")
-    return Verdict(False, None, "tytuł nie pasuje do żadnej kategorii")
+    # Oferty w mailach są już przefiltrowane przez wyszukiwania ustawione w portalach,
+    # więc brak kategorii nie odrzuca oferty; kategoria służy tylko jako etykieta.
+    return Verdict(True, None, "bez kategorii (oferta z wyszukiwania w portalu)")
 
 
 # --- deduplikacja i zapis --------------------------------------------------------------
